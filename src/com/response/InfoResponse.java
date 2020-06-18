@@ -3,7 +3,7 @@ package com.response;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
-public class INFO_RESPONSE implements Serializable {
+public class InfoResponse implements Serializable {
     static final long serialVersionUID = -4862926644813433708L;
     String collectionType;
     int size;

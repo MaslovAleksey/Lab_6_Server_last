@@ -1,6 +1,6 @@
 package com;
 
-import com.support.USER_DRAG_SERVER;
+import com.support.UserDragServer;
 
 
 public class Lab_6_Server
@@ -10,7 +10,7 @@ public class Lab_6_Server
      */
     public static void main (String[] args) //C:\Study\My_programe\Java_pr\IDEA\Lab_5\Crazy_dragon.json
     {
-        USER_DRAG_SERVER userServer = new USER_DRAG_SERVER();
+        UserDragServer userServer = new UserDragServer();
         userServer.process();
     }
 }

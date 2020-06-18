@@ -2,14 +2,14 @@ package com.response;
 
 import java.io.Serializable;
 
-public class COUNT_RESPONSE implements Serializable {
+public class CountResponse implements Serializable {
     long count;
 
     public long getCount() {
         return count;
     }
 
-    public COUNT_RESPONSE(long count) {
+    public CountResponse(long count) {
         this.count = count;
     }
 }

@@ -13,7 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
-public class USER_DRAG_SERVER {
+public class UserDragServer {
     /**
      * Коллекция для хранения элементов
      */
@@ -21,7 +21,7 @@ public class USER_DRAG_SERVER {
     /**
      * Переменная, хранящая имя файла, содержащего элементы коллекции
      */
-    private String Name_f; // файл, содержащий сведения о коллекции
+    private String nameFile; // файл, содержащий сведения о коллекции
     /**
      * Переменная, хранящая список запросов от клиента
      */
@@ -29,7 +29,7 @@ public class USER_DRAG_SERVER {
     /**
      * Класс, обрабатывающий запрос клиента
      */
-    PROVIDE_RESULT provideResult = new PROVIDE_RESULT();
+    ProvideResult provideResult = new ProvideResult();
     Gson gson = new Gson();
     /**
      * Значение порта по-умолчанию
@@ -49,14 +49,13 @@ public class USER_DRAG_SERVER {
         Scanner in = new Scanner(System.in);
         try {
             System.out.println("Завершение работы серверного приложения осуществляется вводом ключевого слова 'exit' или сочетанием клавиш <ctrl> + <d>");
-
             System.out.print("Укажите имя файла, содержащего элементы коллекции - ");
-            Name_f = in.nextLine().trim();
-            if (Name_f.equals("exit"))
+            nameFile = in.nextLine().trim();
+            if (nameFile.equals("exit"))
                 throw new NoSuchElementException();
 
 
-            read_file(Name_f);
+            readFile(nameFile);
             receivePort(in);
             waiting(in);
         } catch (NoSuchElementException e)
@@ -71,16 +70,15 @@ public class USER_DRAG_SERVER {
     //2.) Метод, считывающий данные из файла и заполняющий хеш-таблицу
     /**
      * Метод для считывания из файла и записи в хеш-таблицу
-     *
-     * @param name_f Имя файла, содержащего элементы коллекции
+     * @param nameFile Имя файла, содержащего элементы коллекции
      * @throws NoSuchElementException Отслеживание команды завершения пользовательского ввода
      */
-    private void read_file(String name_f) throws NoSuchElementException {
-            //Name_f = "Crazy_dragon_hashtable.json"
-            Name_f = name_f;
+    private void readFile(String nameFile) throws NoSuchElementException {
+            //nameFile = "Crazy_dragon_hashtable.json"
+            nameFile = nameFile;
             Gson gson = new Gson();
             try {
-                byte[] bytes = Files.readAllBytes(Paths.get(Name_f));
+                byte[] bytes = Files.readAllBytes(Paths.get(nameFile));
                 dragonHashtable = gson.fromJson(new String(bytes), new TypeToken<Hashtable<Integer, Dragon>>() {}.getType());
             } catch (JsonSyntaxException e) {
                 System.out.println("Некорректный формат данных в указанном файле, отредактируйте данные и перезапустите приложение");
@@ -91,8 +89,8 @@ public class USER_DRAG_SERVER {
             }
             for (Dragon dragon:dragonHashtable.values())
             {
-                dragon.generate_id();
-                dragon.set_creationDate();
+                dragon.generateId();
+                dragon.setCreationDate();
             }
     }
     //------------------------------------------------------------------------------------------------------------------
@@ -108,33 +106,26 @@ public class USER_DRAG_SERVER {
         try (ServerSocket serverSocket = new ServerSocket(port)) // Установка сокета на стороне сервера
         {
             while (true) {
-                System.out.println("\nОжидание запроса от клиента");
+                System.out.println("\nОжидание запроса от клиента (время ожидания - 5 минут)");
+                serverSocket.setSoTimeout(300000); // Установка времени ожидания запроса от клиента - 3 минуты
                 Socket server = serverSocket.accept();// Ожидание подключения клиентов к серверу и воссоздания клиентского сокета на стороне сервера
 
                 ObjectInputStream serverIn = new ObjectInputStream(new BufferedInputStream(server.getInputStream()));
                 ObjectOutputStream serverOut = new ObjectOutputStream(new BufferedOutputStream(server.getOutputStream()));
 
-                OBJ_TO_SERV request = (OBJ_TO_SERV) serverIn.readObject();
+                ObjToServer request = (ObjToServer) serverIn.readObject();
 
                 Serializable result = provideResult.provideResult(request, dragonHashtable, commandsHistory);
 
                 serverOut.writeObject(result);
                 serverOut.flush();
 
-                if (request.get_command().equals("exit")) {
-                    System.out.println("Поступила команда завершения работы клиентского приложения");
-                    System.out.println("Для ожидания нового запроса - нажмите <Enter>\n" +
-                            "Для завершения работы серверного приложения - введите 'exit' или сочетание клавиш <ctrl> + <d>");
-                    if (in_wait.nextLine().trim().equals("exit"))
-                        throw new NoSuchElementException();
-                }
+                if (request.getCommand().trim().equals("save"))
+                    save();
 
-
-                System.out.println("Запрос клиента обработан\n" +
-                        "Для ожидания нового запроса - нажмите <Enter>\n" +
-                        "Для завершения работы серверного приложения - введите 'exit' или сочетание клавиш <ctrl> + <d>");
-                if (in_wait.nextLine().trim().equals("exit"))
+                if (request.getCommand().trim().equals("exit"))
                     throw new NoSuchElementException();
+                System.out.println("\nЗапрос клиента обработан");
             }
         }
         catch (IOException e1)
@@ -159,37 +150,37 @@ public class USER_DRAG_SERVER {
     {
         String json = gson.toJson(dragonHashtable);
         try {
-            Files.write(Paths.get(Name_f), json.getBytes());
-        } catch (IOException e)
+            Files.write(Paths.get(nameFile), json.getBytes());
+        } catch (IOException | NullPointerException e2)
         {
-            System.out.println("Impossible");
+            System.out.println("Невозможно сохранить коллекцию в указанный файл");
         }
     }
     //-------------------------------------------------------------------------------------------------
     //5.) Метод, запрашивающий номер порта
     /**
      * Метод, запрашивающий номер порта
-     * @param in_port
+     * @param inPort
      * @throws NoSuchElementException Отслеживание команды завершения пользовательского ввода
      */
-    private void receivePort (Scanner in_port) throws NoSuchElementException
+    private void receivePort (Scanner inPort) throws NoSuchElementException
     {
-        String  port_;
-        System.out.println("\nВведите значение порта для установления связи с клиентом\n" +
+        String  portMy;
+        System.out.println("\nВведите значение порта для установления связи с клиентом (целочисленное значение [1024-65535])\n" +
                 "(для использования данных по умолчанию оставьте поля пустыми");
         while (true) {
-            System.out.print("\nПорт (целочисленное значение) - ");
-            port_ = in_port.nextLine().trim();
-            if (port_.length() == 0) {
+            System.out.print("\nПорт - ");
+            portMy = inPort.nextLine().trim();
+            if (portMy.length() == 0) {
                 System.out.println("Порт - " + port);
                 break;
             }
             else {
-                if(isInteger(port_)) {
+                if((isInteger(portMy) && (k<=65535) && (k>=1024))) {
                     port = k;
                     break;
                 }
-                else System.out.println("Введите корректное значение порта (целочисленное значение)");
+                else System.out.println("Введите корректное значение порта (целочисленное значение [1024-65535])");
             }
         }
     }
